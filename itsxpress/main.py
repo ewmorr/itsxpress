@@ -66,7 +66,7 @@ def myparser():
     parser.add_argument('--outfile', '-o', type=str, help="the trimmed Fastq file, if it \
                         ends in 'gz' it will be gzipped", required=True)
     parser.add_argument('--outfile2', '-o2', type=str, help="the trimmed read 2 Fastq file, if it \
-                            ends in 'gz' it will be gzipped. If provided, reads will be returned unmerged.", default=None)
+                            ends in 'gz' it will be gzipped. If provided, reads will be returned unmerged with both 5 prime and 3 prime ends trimmed", default=None)
     parser.add_argument('--tempdir', help='The temp file directory', default=None)
     parser.add_argument('--keeptemp' ,help="Should intermediate files be kept?", action='store_true')
     parser.add_argument('--region', help='', choices=["ITS2", "ITS1", "ALL"], required=True)
@@ -299,8 +299,8 @@ class Dedup:
             record1, record2 = ziprecord
             repseq = self.matchdict[record1.id]
             start, stop, tlen = itspos.get_position(repseq)
-            r2start = tlen - stop
-            return record1[start:], record2[r2start:]
+            r2start = tlen - (stop - 1) #added -1 to 3' indices becasue the index is referring to the conserved sequence end/start, not the ITS end/start. In the original code the stop index was already -1'd (L188) for string indexing from 0 (whereas the hmmer coords start from 1).
+            return record1[start:stop-1], record2[r2start:tlen-start] #added end index to trim 3' read end.
 
         def _split_gen(gen):
             gen_a, gen_b = tee(gen, 2)
